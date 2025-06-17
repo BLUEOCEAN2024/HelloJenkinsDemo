@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Clone') {
             steps {
-                git 'https://github.com/BLUEOCEAN2024/HelloJenkinsDemo.git'
+                git url:'https://github.com/BLUEOCEAN2024/HelloJenkinsDemo.git' , branch: 'main'
             }
         }
 
