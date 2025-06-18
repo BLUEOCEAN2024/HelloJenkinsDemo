@@ -1,90 +1,34 @@
+
 pipeline {
     agent any
 
     tools {
-        maven 'M3' // Must be configured in Jenkins Global Tools
-    }
-
-    environment {
-        DOCKER_IMAGE = 'hellojenkins-demo'
-        DOCKER_REPO = 'chancf89-dev'
-        OPENSHIFT_SERVER = 'https://api.rm1.0a51.p1.openshiftapps.com:6443'
-        OPENSHIFT_PROJECT = 'chancf89-dev'
+        maven 'M3' // we will configure this in Jenkins
     }
 
     stages {
-        stage('Checkout') {
+        stage('Clone') {
             steps {
-                git url: 'https://github.com/BLUEOCEAN2024/PromethusGrafanademo.git'
+                git url:'https://github.com/BLUEOCEAN2024/HelloJenkinsDemo.git' , branch: 'main'
             }
         }
 
-        stage('Build JAR') {
+        stage('Build') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'mvn clean package'
             }
         }
 
-        stage('Docker Build & Push') {
+        stage('Test') {
             steps {
-                script {
-                    sh "docker build -t ${DOCKER_IMAGE} ."
-                    sh "docker tag ${DOCKER_IMAGE} docker.io/${DOCKER_REPO}/${DOCKER_IMAGE}"
-
-                    withCredentials([string(credentialsId: 'dockerhub-password', variable: 'DOCKER_PASSWORD')]) {
-                        sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_REPO} --password-stdin"
-                    }
-
-                    sh "docker push docker.io/${DOCKER_REPO}/${DOCKER_IMAGE}"
-                }
+                sh 'mvn test'
             }
         }
 
-        stage('Deploy to OpenShift') {
+        stage('Deploy (Run Spring Boot)') {
             steps {
-                withCredentials([string(credentialsId: 'openshift-token', variable: 'OC_TOKEN')]) {
-                    sh """
-                    oc login ${OPENSHIFT_SERVER} --token=${OC_TOKEN}
-                    oc project ${OPENSHIFT_PROJECT}
-                    oc set image deployment/${DOCKER_IMAGE} ${DOCKER_IMAGE}=docker.io/${DOCKER_REPO}/${DOCKER_IMAGE} --record
-                    """
-                }
+                sh 'java -jar target/*.jar &'
             }
         }
     }
 }
-
-
-// pipeline {
-//     agent any
-
-//     tools {
-//         maven 'M3' // we will configure this in Jenkins
-//     }
-
-//     stages {
-//         stage('Clone') {
-//             steps {
-//                 git url:'https://github.com/BLUEOCEAN2024/HelloJenkinsDemo.git' , branch: 'main'
-//             }
-//         }
-
-//         stage('Build') {
-//             steps {
-//                 sh 'mvn clean package'
-//             }
-//         }
-
-//         stage('Test') {
-//             steps {
-//                 sh 'mvn test'
-//             }
-//         }
-
-//         stage('Deploy (Run Spring Boot)') {
-//             steps {
-//                 sh 'java -jar target/*.jar &'
-//             }
-//         }
-//     }
-// }
